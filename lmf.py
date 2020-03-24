@@ -8,6 +8,7 @@ from torch.nn.parameter import Parameter
 from inceptionresnetv2 import InceptionResNetV2
 from pytorch_transformers import BertModel, BertConfig, BertTokenizer
 
+
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 class LMF(nn.Module):
@@ -20,27 +21,37 @@ class LMF(nn.Module):
         self.inceptionresnetv2 = InceptionResNetV2()
         self.netvlad = NetVLAD()
         self.textnet = TextNet()
+        self.vggish = torch.hub.load('harritaylor/torchvggish', 'vggish')
 
+        self.audio_factor = Parameter(torch.Tensor(self.rank, self.output_dim, self.hidden_dims).to(device))
         self.image_factor = Parameter(torch.Tensor(self.rank, self.output_dim, self.hidden_dims).to(device))
         self.text_factor = Parameter(torch.Tensor(self.rank, self.output_dim, self.hidden_dims).to(device))
         self.fusion_weights = Parameter(torch.Tensor(1, self.rank).to(device))
         self.fusion_bias = Parameter(torch.Tensor(1, self.output_dim).to(device))
 
+        xavier_normal_(self.audio_factor)
         xavier_normal_(self.image_factor)
         xavier_normal_(self.text_factor)
         xavier_normal_(self.fusion_weights)
         self.fusion_bias.data.fill_(0)
 
-    def forward(self, images, texts, tokenizer):
-        images_out = self.inceptionresnetv2(images)
-        images_out = self.netvlad(images_out)
+    def forward(self, audio, images, texts, tokenizer):
+        images_out=[]
+        for image in images:#生成每一帧的特征图
+            image_out = self.inceptionresnetv2(image)
+            images_out.append(image_out)
+        numpy.array(images_out).reshape(([1538,8],128))#修改尺度
+        images_out = self.netvlad(images_out)#聚合特征
 
         tokens, segments, input_masks = get_tokens(texts, tokenizer)
         texts_out = self.textnet(tokens, segments, input_masks)
 
+        audio_out=self.vggish(audio)
+
+        fusion_audio = torch.matmul(audio_out, self.audio_factor)
         fusion_image = torch.matmul(images_out, self.image_factor)
         fusion_text = torch.matmul(texts_out, self.text_factor)
-        fusion_zy = fusion_image * fusion_text
+        fusion_zy = fusion_audio * fusion_image * fusion_text
 
         output = torch.matmul(self.fusion_weights, fusion_zy.permute(1, 0, 2)).squeeze() + self.fusion_bias
         output = output.view(-1, self.output_dim)
