@@ -40,7 +40,7 @@ class LMF(nn.Module):
         for image in images:#生成每一帧的特征图
             image_out = self.inceptionresnetv2(image)
             images_out.append(image_out)
-        numpy.array(images_out).reshape(([1538,8],128))#修改尺度
+        numpy.array(images_out).reshape(([1,1536],128))#修改尺度
         images_out = self.netvlad(images_out)#聚合特征
 
         tokens, segments, input_masks = get_tokens(texts, tokenizer)
@@ -60,8 +60,12 @@ class LMF(nn.Module):
         return output
 
 if __name__ == '__main__':
-    images = torch.randn(1, 3, 299, 299)
-    texts = ['[CLS] 你好吗? [SEP]']
+    #images = torch.randn(1, 3, 299, 299)
+    #测试视频.mp4
+    #texts = ['[CLS] 你好吗? [SEP]']
+    texts=data_extractor.extract_video_Name('测试视频.mp4')
+    images=data_extractor.extract_video_Frames('测试视频.mp4')
+    audio=data_extractor.video_to_audio('测试视频.mp4')
     tokenizer = BertTokenizer.from_pretrained('bert-base-chinese')
     lmf = LMF(output_dim=1024, rank=4, use_softmax=False)
     output = lmf(images, texts, tokenizer)
