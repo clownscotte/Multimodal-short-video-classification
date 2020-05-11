@@ -2,6 +2,8 @@
 
 data_extractor.py：实现数据预处理，video_to_audio将视频转码为音频，extract_video_Name提取视频的文件名，extract_video_Frames提取视频的帧（这里只取了128帧），输入均是文件名filename。
 
+data.py：实现视频文件和标签文件的读取，这里考虑到视频顺序和标签顺序不一致，需要对其进行排序，以实现对应。
+
 inceptionresnetv2.py实现了inceptionresnetv2网络，去掉最后的全连接层，输入为torch.Size([1, 3, 299, 299])，输出为torch.Size([1, 1536, 8, 8])。问题：不知道截取到哪一层，就只将最后一层全连接去掉。（1为batch_size，inceptionresnetv2模型下载地址：链接：https://pan.baidu.com/s/1jbREy49-wku1xYIYZJUkuQ 提取码：rva7）
 
 修改：增加原有的池化层，输出[1536, 8]
