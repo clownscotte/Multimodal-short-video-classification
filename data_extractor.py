@@ -5,10 +5,7 @@ from moviepy.editor import *
 import cv2
 import numpy
 import torch
-
-
-
-
+from PIL import Image
 
 def video_to_audio(file_name):
   video = VideoFileClip(file_name)
@@ -54,6 +51,8 @@ def extract_video_Frames (filename, frame_interval=500, max_num_frames=128):
     Is_has_frames, frame = video_capture.read()
     if not Is_has_frames:
       break
+    #存在疑问
+    numpy.array(frame).reshape(3,299,299)
     frames.append(frame)
     num_retrieved += 1
 
